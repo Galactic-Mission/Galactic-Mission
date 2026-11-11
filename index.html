@@ -1,0 +1,547 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Galactic Mission</title>
+<style>
+:root{--bg:#081126;--panel:#172744;--panel2:#20385c;--blue:#83dcff;--gold:#ffd36a;--green:#63dfb1}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#20365f,#081126 65%);color:#f3f7ff;font-family:Arial,sans-serif}
+header{text-align:center;padding:24px 12px;background:linear-gradient(120deg,#111d42,#34558a);border-bottom:2px solid #496a9c}
+header h1{font-size:clamp(30px,7vw,48px);letter-spacing:2px;color:var(--blue);margin:8px}
+header p{margin:5px;color:#e1efff}
+main{max-width:1000px;margin:auto;padding:14px}
+.card{background:var(--panel);border:1px solid #354e77;border-radius:17px;padding:17px;margin:13px 0;box-shadow:0 8px 24px #0003}
+h2{color:var(--blue);margin-top:4px}
+h3{color:#fff}
+p{line-height:1.5}
+button{border:0;border-radius:11px;padding:12px 15px;margin:4px;background:#70d3f2;color:#08152b;font-weight:bold;cursor:pointer}
+button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+button:disabled{opacity:.45;cursor:default;transform:none}
+input{padding:12px;border-radius:9px;border:1px solid #8ca8c9;width:100%;margin:8px 0}
+.hidden{display:none!important}
+.center{text-align:center}
+.big{font-size:55px}
+.small{font-size:13px;color:#aebfd9}
+.tag{display:inline-block;background:#304c74;padding:7px 10px;border-radius:18px;margin:4px;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.stat{background:#0d1b33;padding:11px;border-radius:11px}
+.stat b{display:block;font-size:19px;margin:5px 0}
+.bar{height:8px;background:#34435e;border-radius:9px;overflow:hidden}
+.fill{height:100%;background:var(--green);transition:width .3s}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.nav button{background:#263c62;color:white;font-size:13px;margin:0}
+.nav button.active{background:var(--blue);color:#07152a}
+.map{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#7b8795;background-image:radial-gradient(#c6cbd0 1px,transparent 1px);background-size:19px 19px;padding:13px;border-radius:15px}
+.place{background:#243a5e;color:white;min-height:105px;border:2px solid #7086a7;position:relative}
+.place span{display:block;font-size:32px;margin-bottom:5px}
+.place.current{border:3px solid #ffe17b;box-shadow:0 0 12px #ffe17b}
+.place.visited:after{content:"✓";position:absolute;right:7px;top:5px;color:#83ffc9;font-size:18px}
+.choice{display:block;width:100%;text-align:left;background:#263e64;color:white;border:1px solid #49678e;margin:8px 0}
+.choice.correct{border-color:#63dfb1;background:#155440}
+.choice.wrong{border-color:#ff9a9a;background:#632d3d}
+.notice{background:#0c1a32;padding:13px;border-radius:11px;line-height:1.5;margin-top:12px}
+.mission-art{font-size:75px;text-align:center;padding:25px;background:linear-gradient(140deg,#172a4b,#354e78);border-radius:14px}
+.fact-art{font-size:75px;text-align:center;padding:15px}
+.avatar{font-size:35px;background:#263c62;color:white}
+.color{width:35px;height:35px;border-radius:50%;padding:0;border:3px solid white}
+.achievement{background:#0d1b33;padding:12px;border-radius:11px;margin:8px 0}
+footer{text-align:center;color:#8299bb;font-size:12px;padding:20px}
+@media(max-width:520px){.nav{grid-template-columns:repeat(2,1fr)}.map{gap:5px;padding:7px}.place{font-size:12px;min-height:94px;padding:7px}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+ <div style="font-size:35px">🚀 🌕 🪐</div>
+ <h1>GALACTIC MISSION</h1>
+ <p>Explore. Discover. Build. Become a space explorer!</p>
+</header>
+<main>
+
+<section class="card center" id="welcome">
+ <div class="big">🌌</div>
+ <h2>Welcome, Future Astronaut!</h2>
+ <p>Your team is travelling to the Moon to build a home for astronauts.</p>
+ <p>Explore the Moon, discover new things, solve problems and keep your crew safe!</p>
+ <span class="tag">🔭 Explore</span><span class="tag">🧠 Learn</span><span class="tag">⭐ Earn rewards</span>
+ <br><button onclick="showCreator()">START YOUR ADVENTURE 🚀</button>
+</section>
+
+<section class="card hidden" id="creator">
+ <h2>👩‍🚀 Create Your Astronaut</h2>
+ <label>Choose your astronaut's name:</label>
+ <input id="playerName" maxlength="18" placeholder="Your name">
+ <p>Choose your character:</p>
+ <button class="avatar" onclick="setAvatar('👩‍🚀')">👩‍🚀</button>
+ <button class="avatar" onclick="setAvatar('👨‍🚀')">👨‍🚀</button>
+ <button class="avatar" onclick="setAvatar('🧑‍🚀')">🧑‍🚀</button>
+ <button class="avatar" onclick="setAvatar('🤖')">🤖</button>
+ <p>Choose a spacesuit colour:</p>
+ <button class="color" style="background:#50a9f0" onclick="setSuit('Blue')"></button>
+ <button class="color" style="background:#ed78ad" onclick="setSuit('Pink')"></button>
+ <button class="color" style="background:#69c98b" onclick="setSuit('Green')"></button>
+ <button class="color" style="background:#e9bd55" onclick="setSuit('Gold')"></button>
+ <div class="center"><div class="big" id="preview">👩‍🚀</div><p id="suitPreview">Blue spacesuit</p></div>
+ <button onclick="startGame()">LAND ON THE MOON 🌕</button>
+</section>
+
+<section id="game" class="hidden">
+ <div class="card center">
+  <div class="big" id="playerAvatar">👩‍🚀</div>
+  <h2 id="hello">Welcome!</h2>
+  <span class="tag" id="suitTag">Blue suit</span>
+  <span class="tag" id="starTag">⭐ 0 stars</span>
+  <span class="tag" id="badgeTag">🏅 0 badges</span>
+  <p class="small">Your current location: <b id="location">Living Area</b></p>
+ </div>
+
+ <div class="card">
+  <h2>📊 Moon Base Status</h2>
+  <div class="stats" id="stats"></div>
+ </div>
+
+ <div class="card">
+  <h2>🛰️ Your Adventure</h2>
+  <div class="nav">
+   <button id="tab-map" class="active" onclick="openTab('map')">🌕 Moon Map</button>
+   <button id="tab-learn" onclick="openTab('learn')">📚 Space School</button>
+   <button id="tab-mission" onclick="openTab('mission')">🚀 Missions</button>
+   <button id="tab-games" onclick="openTab('games')">🎮 Games</button>
+   <button id="tab-crew" onclick="openTab('crew')">❤️ Crew Care</button>
+   <button id="tab-awards" onclick="openTab('awards')">🏆 Awards</button>
+  </div>
+ </div>
+
+ <section id="map" class="card">
+  <h2>🌕 Explore the Moon Base</h2>
+  <p>Choose a place to visit. Each building has something to discover. Look carefully for hidden objects!</p>
+  <div class="map">
+   <button class="place" id="place-home" onclick="visit('home')"><span>🏠</span>Living Area</button>
+   <button class="place" id="place-green" onclick="visit('green')"><span>🌱</span>Greenhouse</button>
+   <button class="place" id="place-solar" onclick="visit('solar')"><span>☀️</span>Solar Station</button>
+   <button class="place" id="place-lab" onclick="visit('lab')"><span>🔬</span>Science Lab</button>
+   <button class="place" id="place-store" onclick="visit('store')"><span>📦</span>Supply Room</button>
+   <button class="place" id="place-radio" onclick="visit('radio')"><span>📡</span>Radio Room</button>
+   <button class="place" id="place-rover" onclick="visit('rover')"><span>🚙</span>Rover Garage</button>
+   <button class="place" id="place-lookout" onclick="visit('lookout')"><span>🔭</span>Lookout Point</button>
+   <button class="place" id="place-med" onclick="visit('med')"><span>🩺</span>Medical Room</button>
+  </div>
+  <div id="placeInfo" class="notice">Welcome to the Moon base! Choose a building to explore.</div>
+  <p id="foundCount">🔎 Hidden objects found: 0 / 9</p>
+ </section>
+
+ <section id="learn" class="card hidden">
+  <h2>📚 Space School</h2>
+  <p>Learn about space, the Moon and life as an astronaut.</p>
+  <div class="card center">
+   <div class="fact-art" id="factEmoji">🌕</div>
+   <h3 id="factTitle">The Moon</h3>
+   <p id="factText">The Moon travels around Earth.</p>
+   <span class="tag" id="factNumber">Fact 1 of 10</span>
+  </div>
+  <button onclick="nextFact()">NEXT FACT ➜</button>
+  <button onclick="rememberFact()">I LEARNED THIS ⭐</button>
+  <div class="card">
+   <h3>🧠 Space Brain Challenge</h3>
+   <p id="quizQuestion"></p>
+   <div id="quizChoices"></div>
+   <p id="quizFeedback"></p>
+   <button onclick="newQuiz()">NEW QUESTION</button>
+  </div>
+ </section>
+
+ <section id="mission" class="card hidden">
+  <h2>🚀 Mission Control</h2>
+  <p>Complete 10 mission days. Your choices affect your Moon base!</p>
+  <span class="tag" id="missionDay">Day 1 / 10</span>
+  <div class="mission-art" id="missionEmoji">🌪️</div>
+  <h3 id="missionTitle"></h3>
+  <p id="missionText"></p>
+  <p><b>Think carefully. What should your crew do?</b></p>
+  <div id="missionChoices"></div>
+  <div id="missionFeedback" class="notice hidden"></div>
+  <button id="missionNext" class="hidden" onclick="nextMission()">NEXT DAY ➜</button>
+ </section>
+
+ <section id="games" class="card hidden">
+  <h2>🎮 Astronaut Training Centre</h2>
+  <div class="card">
+   <h3>🧰 Game 1: Pack Your Space Bag</h3>
+   <p id="packQuestion">Which item helps an astronaut breathe?</p>
+   <div id="packChoices"></div>
+   <p id="packFeedback"></p>
+   <button onclick="newPack()">NEXT PACKING CHALLENGE</button>
+  </div>
+  <div class="card">
+   <h3>🪐 Game 2: Planet Explorer</h3>
+   <p>Which planet is famous for its rings?</p>
+   <button onclick="planetAnswer('Earth')">🌍 Earth</button>
+   <button onclick="planetAnswer('Saturn')">🪐 Saturn</button>
+   <button onclick="planetAnswer('Mars')">🔴 Mars</button>
+   <p id="planetFeedback"></p>
+  </div>
+  <div class="card">
+   <h3>🧮 Game 3: Supply Maths</h3>
+   <p id="mathQuestion"></p>
+   <input id="mathAnswer" type="number" placeholder="Type your answer">
+   <button onclick="checkMath()">CHECK ANSWER</button>
+   <p id="mathFeedback"></p>
+   <button onclick="newMath()">NEW MATH CHALLENGE</button>
+  </div>
+ </section>
+
+ <section id="crew" class="card hidden">
+  <h2>❤️ Take Care of Your Crew</h2>
+  <div class="big center">👩‍🚀 👨‍🚀 🧑‍🚀</div>
+  <p>Your astronauts need food, water, rest and teamwork.</p>
+  <h3 id="crewMood">Your crew is feeling good!</h3>
+  <button onclick="crewCare('rest')">🛌 Give them a rest</button>
+  <button onclick="crewCare('food')">🍎 Give them food</button>
+  <button onclick="crewCare('water')">💧 Give them water</button>
+  <button onclick="crewCare('team')">🤝 Team activity</button>
+  <p id="crewMessage"></p>
+  <div class="card">
+   <h3>💡 Astronaut Tip</h3>
+   <p>Healthy astronauts make better decisions. A good team listens, shares jobs and helps one another.</p>
+  </div>
+ </section>
+
+ <section id="awards" class="card hidden">
+  <h2>🏆 Your Achievements</h2>
+  <p>Explore, learn and complete challenges to unlock awards.</p>
+  <div id="awardList"></div>
+ </section>
+
+ <div class="card">
+  <h3>📡 Mission Control Messages</h3>
+  <div id="log" class="notice">Welcome to your Moon base, astronaut!</div>
+ </div>
+ <div class="center"><button onclick="saveGame()">💾 SAVE GAME</button><button onclick="resetGame()">START A NEW GAME</button></div>
+</section>
+
+<section id="ending" class="card center hidden">
+ <div class="big">🏆🌕</div>
+ <h2 id="endTitle">Mission Complete!</h2>
+ <p id="endText"></p>
+ <h2 id="endScore"></h2>
+ <p id="endBadge"></p>
+ <button onclick="location.reload()">PLAY AGAIN 🚀</button>
+</section>
+</main>
+<footer>GALACTIC MISSION • An educational adventure for young space explorers</footer>
+
+<script>
+let player="Astronaut",avatar="👩‍🚀",suit="Blue";
+let stars=0,badges=0,day=0,factIndex=0;
+let resources={Water:100,Oxygen:100,Power:100,Food:100,Health:100};
+let currentPlace="home",visited=[],found=[],learned=[];
+let missionAnswered=false,packIndex=0,packDone=false,mathAnswer=0;
+let logMessages=[],quizDone=[],quizIndex=0,missionDone=false;
+
+function $(id){return document.getElementById(id)}
+function showCreator(){
+ $("welcome").classList.add("hidden");
+ $("creator").classList.remove("hidden");
+}
+function setAvatar(a){avatar=a;$("preview").textContent=a}
+function setSuit(s){suit=s;$("suitPreview").textContent=s+" spacesuit"}
+function startGame(){
+ player=$("playerName").value.trim()||"Astronaut";
+ $("creator").classList.add("hidden");
+ $("game").classList.remove("hidden");
+ $("playerAvatar").textContent=avatar;
+ $("hello").textContent="Welcome, "+player+"!";
+ $("suitTag").textContent=suit+" suit";
+ render();
+ visit("home");
+ showMission();
+ showFact();
+ newQuiz();
+ newPack();
+ newMath();
+}
+function openTab(tab){
+ ["map","learn","mission","games","crew","awards"].forEach(t=>{
+  $(t).classList.toggle("hidden",t!==tab);
+  $("tab-"+t).classList.toggle("active",t===tab);
+ });
+ if(tab==="awards")showAwards();
+}
+function render(){
+ let html="";
+ for(let k in resources){
+  let icon={Water:"💧",Oxygen:"🫧",Power:"⚡",Food:"🍎",Health:"❤️"}[k];
+  html+=`<div class="stat">${icon} ${k}<b>${resources[k]}%</b><div class="bar"><div class="fill" style="width:${resources[k]}%"></div></div></div>`;
+ }
+ $("stats").innerHTML=html;
+ $("starTag").textContent="⭐ "+stars+" stars";
+ $("badgeTag").textContent="🏅 "+badges+" badges";
+ $("foundCount").textContent="🔎 Hidden objects found: "+found.length+" / 9";
+}
+function say(msg){
+ logMessages.unshift(msg);
+ $("log").innerHTML=logMessages.slice(0,5).join("<br><br>");
+}
+const places={
+ home:["🏠 Living Area","This is where astronauts eat, sleep and relax. A good home helps the crew stay healthy.","🧸","A small toy has been left behind! Even astronauts can bring a reminder of home.","Astronauts need a safe place to rest."],
+ green:["🌱 Greenhouse","Plants can be grown here. Scientists study how plants might grow during space missions.","🌻","You found a tiny plant growing in a pot!","Plants need water, light and care."],
+ solar:["☀️ Solar Station","Solar panels collect energy from sunlight. This energy can power machines and lights.","🔋","You found a spare battery!","Sunlight can be changed into electricity."],
+ lab:["🔬 Science Lab","Scientists study Moon rocks, soil and other materials here.","🪨","You found a strange-looking Moon rock!","Scientists use observations and tests to learn."],
+ store:["📦 Supply Room","Food, water, tools and other important supplies are kept here.","🥫","You found an extra food pack!","Planning helps astronauts save supplies."],
+ radio:["📡 Radio Room","Astronauts use communication equipment to send messages to Earth.","🎧","You found a spare headset!","Communication helps teams work together."],
+ rover:["🚙 Rover Garage","A lunar rover is a vehicle that helps astronauts travel across the Moon's surface.","🛞","You found a rover tool!","The Moon's surface has rocks and dust."],
+ lookout:["🔭 Lookout Point","Astronauts can observe the Moon and space from this area.","⭐","You spotted a bright star in the sky!","The Moon has no light of its own. It reflects sunlight."],
+ med:["🩺 Medical Room","The crew can check their health and get help here.","🩹","You found a first-aid kit!","Astronauts need to look after their bodies."]
+};
+function visit(id){
+ currentPlace=id;
+ $("location").textContent=places[id][0].slice(3);
+ document.querySelectorAll(".place").forEach(b=>b.classList.remove("current"));
+ $("place-"+id).classList.add("current");
+ let p=places[id];
+ let msg="<h3>"+p[0]+"</h3><p>"+p[1]+"</p><p>💡 <b>Space fact:</b> "+p[4]+"</p>";
+ if(!visited.includes(id)){
+  visited.push(id);stars+=2;
+  msg+="<p>⭐ You discovered a new building! +2 stars.</p>";
+  if(visited.length===3){badges++;msg+="<p>🏅 You earned the Curious Explorer badge!</p>"}
+ }
+ if(!found.includes(id)){
+  msg+=`<button onclick="findObject('${id}')">🔎 SEARCH FOR A HIDDEN OBJECT</button>`;
+ }else{
+  msg+="<p>✅ You already found this building's hidden object.</p>";
+ }
+ $("placeInfo").innerHTML=msg;
+ $("place-"+id).classList.add("visited");
+ render();
+ say("You visited "+p[0]+".");
+}
+function findObject(id){
+ if(found.includes(id))return;
+ found.push(id);stars+=3;
+ $("placeInfo").innerHTML+="<div class='notice'>🎉 "+places[id][2]+" "+places[id][3]+"<br><b>+3 stars!</b></div>";
+ render();say("You found a hidden object at "+places[id][0]+".");
+ if(found.length===9){badges++;say("🏅 Hidden Object Master badge unlocked!");}
+}
+
+const facts=[
+ ["🌕","The Moon","The Moon travels around Earth. It is Earth's natural satellite."],
+ ["🌑","Moon Dust","The Moon's surface is covered in fine dust and broken pieces of rock."],
+ ["☀️","Solar Power","Solar panels turn sunlight into electricity."],
+ ["🧑‍🚀","Spacesuits","Spacesuits help astronauts breathe and stay protected."],
+ ["🌍","Our Home","Earth is the only planet we currently know has life."],
+ ["🪐","Saturn","Saturn is famous for its rings, which are made mostly of ice and rock."],
+ ["🚀","Rockets","Rockets carry astronauts and equipment into space."],
+ ["🌱","Plants in Space","Scientists study how plants might grow during long space trips."],
+ ["🧲","Gravity","Gravity is a force that pulls things towards each other."],
+ ["🌑","Moon Day","One day from sunrise to sunrise on the Moon lasts about 29.5 Earth days."]
+];
+function showFact(){
+ let f=facts[factIndex%facts.length];
+ $("factEmoji").textContent=f[0];$("factTitle").textContent=f[1];
+ $("factText").textContent=f[2];$("factNumber").textContent="Fact "+(factIndex%facts.length+1)+" of 10";
+}
+function nextFact(){factIndex++;showFact()}
+function rememberFact(){
+ let id=factIndex%facts.length;
+ if(learned.includes(id)){ $("factText").textContent="You have already collected this fact. Try another one!";return}
+ learned.push(id);stars+=2;render();say("You learned about "+facts[id][1]+". +2 stars!");
+ if(learned.length===10){badges++;say("🏅 Space Scholar badge unlocked!")}
+}
+const quizzes=[
+ ["What do solar panels collect?","Sunlight",["Sunlight","Moon dust","Rain"],0,"Solar panels use sunlight to make electricity."],
+ ["What is a spacesuit for?","Keeping astronauts safe",["Making astronauts fly","Keeping astronauts safe","Making food"],1,"Spacesuits help astronauts breathe and stay protected."],
+ ["Which planet has famous rings?","Saturn",["Mars","Earth","Saturn"],2,"Saturn is famous for its rings."],
+ ["Why do astronauts recycle water?","To save water",["To make rocks","To grow stars","To save water"],2,"Water is important, so saving and reusing it can help."],
+ ["What should astronauts do during a safety warning?","Follow the safety plan",["Ignore it","Follow the safety plan","Run outside"],1,"Safety plans help protect the crew."],
+ ["What is a rover?","A vehicle for exploring",["A type of food","A vehicle for exploring","A spacesuit"],1,"A rover is a vehicle used to explore the Moon or another world."],
+ ["What does gravity do?","Pulls things towards each other",["Makes light","Pulls things towards each other","Makes oxygen"],1,"Gravity is a force that pulls objects towards each other."],
+ ["Why do plants need light?","To help them grow",["To make rocks","To help them grow","To make radio signals"],1,"Plants use light to help make their food."]
+];
+function newQuiz(){
+ quizIndex=Math.floor(Math.random()*quizzes.length);
+ let q=quizzes[quizIndex];
+ $("quizQuestion").textContent=q[0];
+ $("quizFeedback").textContent="";
+ $("quizChoices").innerHTML=q[2].map((v,i)=>`<button class="choice" onclick="answerQuiz(${i})">${v}</button>`).join("");
+}
+function answerQuiz(i){
+ let q=quizzes[quizIndex];
+ if(quizDone.includes(quizIndex)){ $("quizFeedback").textContent="You have already answered this question. Try a new one!";return}
+ quizDone.push(quizIndex);
+ if(i===q[3]){stars+=3;$("quizFeedback").textContent="🌟 Correct! "+q[4]+" You earned 3 stars."}
+ else{$("quizFeedback").textContent="💡 Good try! The answer is "+q[1]+". "+q[4]+" You earned 1 star.";stars++}
+ render();document.querySelectorAll("#quizChoices button").forEach(b=>b.disabled=true);
+ if(quizDone.length===quizzes.length){badges++;say("🏅 Space Brain badge unlocked!")}
+}
+const missions=[
+ ["🌪️ Dust Storm","A strong Moon dust storm is approaching. What should the crew do?",[
+ ["Stay inside the protected base","Good choice! The crew is safer indoors.","Health",8,true],
+ ["Go outside to watch it","That is risky during a storm.","Health",-15,false],
+ ["Turn off every machine","Some machines are needed to keep the base safe.","Power",-10,false]]],
+ ["💧 Low Water","Your water tank is running low. The next delivery is several days away. What is the best plan?",[
+ ["Recycle safe water and check supplies","Excellent! Saving water helps the whole crew.","Water",15,true],
+ ["Use extra water today","That could leave too little for later.","Water",-15,false],
+ ["Ignore the warning","The crew needs water every day.","Health",-10,false]]],
+ ["☀️ Low Power","Your solar panels are collecting less sunlight. What should you do first?",[
+ ["Check the panels and save extra power","Smart! Check the problem and reduce waste.","Power",15,true],
+ ["Use every machine at once","That will use more electricity.","Power",-15,false],
+ ["Stop checking the power level","The crew needs to know how much power remains.","Health",-8,false]]],
+ ["🍎 Food Planning","There are 12 food packs for 4 astronauts. If they share equally, how many packs does each astronaut get?",[
+ ["3 packs each","Correct! 12 divided by 4 is 3.","Food",10,true],
+ ["4 packs each","That would use all 12 packs for only 3 people.","Food",-5,false],
+ ["6 packs each","There are not enough packs for that.","Food",-8,false]]],
+ ["🛡️ Radiation Alert","A warning says the crew should avoid being outside. What should they do?",[
+ ["Move to the protected area","Correct! Follow the safety plan.","Health",12,true],
+ ["Go outside to investigate","That ignores the warning.","Health",-20,false],
+ ["Wait outside for more news","The crew should move to safety first.","Health",-15,false]]],
+ ["🌱 Greenhouse Problem","The plants are not growing well. What should the team check?",[
+ ["Water, light and temperature","Great! Plants need the right conditions.","Food",12,true],
+ ["Only the colour of the pots","That will not solve the growing problem.","Food",-8,false],
+ ["Stop watering every plant","Plants need water to grow.","Food",-12,false]]],
+ ["📡 Lost Signal","The base cannot send a message to Earth. What should you check?",[
+ ["The antenna and backup equipment","Good thinking! Check the communication system.","Power",8,true],
+ ["Throw away the radio","The radio may still be useful.","Power",-10,false],
+ ["Ignore all messages","The crew needs to communicate.","Health",-8,false]]],
+ ["😴 Tired Crew","One astronaut has worked for many hours and feels tired. What is best?",[
+ ["Give them time to rest","Correct! Rest is important for health.","Health",15,true],
+ ["Give them more work","That could make them more tired.","Health",-15,false],
+ ["Tell them to skip a meal","Food and rest are both important.","Food",-10,false]]],
+ ["🧰 Broken Machine","A machine stops working. What should the crew do first?",[
+ ["Follow the instructions and ask the repair team","Good! Check safely and ask trained helpers.","Power",8,true],
+ ["Hit it until it works","That could make the problem worse.","Power",-12,false],
+ ["Take it apart without checking","The crew should follow safe instructions.","Health",-10,false]]],
+ ["🌕 Final Check","The mission is nearly finished. The crew has limited supplies. What should you do?",[
+ ["Check every supply and the crew's health","Excellent! A final check helps the team finish safely.","Health",12,true],
+ ["Use all the food for a party","The crew still needs supplies.","Food",-12,false],
+ ["Leave the base without checking","The team should check the base first.","Power",-8,false]]]
+];
+function showMission(){
+ missionAnswered=false;
+ let m=missions[day];
+ $("missionDay").textContent="Mission Day "+(day+1)+" / 10";
+ $("missionEmoji").textContent=m[0].split(" ")[0];
+ $("missionTitle").textContent=m[0];
+ $("missionText").textContent=m[1];
+ $("missionFeedback").classList.add("hidden");
+ $("missionNext").classList.add("hidden");
+ $("missionChoices").innerHTML=m[2].map((c,i)=>`<button class="choice" onclick="chooseMission(${i})">${c[0]}</button>`).join("");
+}
+function chooseMission(i){
+ if(missionAnswered)return;
+ missionAnswered=true;
+ let c=missions[day][2][i];
+ resources[c[2]]=Math.max(0,Math.min(100,resources[c[2]]+c[3]));
+ resources.Water=Math.max(0,resources.Water-2);
+ resources.Oxygen=Math.max(0,resources.Oxygen-2);
+ resources.Food=Math.max(0,resources.Food-2);
+ resources.Power=Math.max(0,resources.Power-2);
+ stars+=c[4]?4:1;
+ if(c[4])badges++;
+ render();
+ document.querySelectorAll("#missionChoices button").forEach(b=>b.disabled=true);
+ $("missionFeedback").classList.remove("hidden");
+ $("missionFeedback").innerHTML=(c[4]?"🌟 <b>Excellent decision!</b>":"💡 <b>Good try!</b>")+"<br>"+c[1]+"<br>"+(c[4]?"You earned 4 stars.":"You earned 1 star. Read the explanation and learn!");
+ $("missionNext").classList.remove("hidden");
+ $("missionNext").textContent=day===9?"FINISH MISSION 🏆":"NEXT DAY ➜";
+ say(c[1]);
+}
+function nextMission(){
+ if(!missionAnswered)return;
+ if(Object.values(resources).some(v=>v<=0)){finish(false);return}
+ if(day===9){finish(true);return}
+ day++;showMission();
+}
+const packs=[
+ ["Which item helps an astronaut breathe?","Oxygen tank",["🫧 Oxygen tank","🍕 Pizza box","⚽ Football"],0],
+ ["Which item protects an astronaut's head?","Helmet",["🎩 Party hat","🪖 Helmet","🧢 Baseball cap"],1],
+ ["Which item helps astronauts communicate?","Radio",["📻 Radio","🎸 Guitar","🪁 Kite"],0],
+ ["Which item helps astronauts travel over the Moon?","Rover",["🛏️ Bed","🚙 Rover","🍎 Apple"],1],
+ ["Which item helps make electricity from sunlight?","Solar panel",["🔦 Torch","☀️ Solar panel","🧸 Toy"],1]
+];
+function newPack(){
+ packDone=false;
+ packIndex=Math.floor(Math.random()*packs.length);
+ let p=packs[packIndex];
+ $("packQuestion").textContent=p[0];$("packFeedback").textContent="";
+ $("packChoices").innerHTML=p[2].map((x,i)=>`<button class="choice" onclick="answerPack(${i})">${x}</button>`).join("");
+}
+function answerPack(i){
+ if(packDone)return;
+ packDone=true;
+ let p=packs[packIndex];
+ if(i===p[3]){stars+=3;$("packFeedback").textContent="🌟 Correct! "+p[1]+" is the answer. +3 stars!"}
+ else{stars++;$("packFeedback").textContent="💡 Good try! The answer is "+p[1]+". +1 star."}
+ render();document.querySelectorAll("#packChoices button").forEach(b=>b.disabled=true);
+}
+function planetAnswer(answer){
+ if(answer==="Saturn"){stars+=2;$("planetFeedback").textContent="🌟 Correct! Saturn is famous for its rings. +2 stars."}
+ else{$("planetFeedback").textContent="Good try! The answer is Saturn. Look it up in Space School!"}
+ render();
+}
+function newMath(){
+ let a=Math.floor(Math.random()*8)+3,b=Math.floor(Math.random()*8)+2;
+ mathAnswer=a*b;
+ $("mathQuestion").textContent="Your crew has "+a+" boxes. Each box contains "+b+" food packs. How many food packs are there altogether?";
+ $("mathAnswer").value="";$("mathFeedback").textContent="";
+}
+function checkMath(){
+ if($("mathAnswer").value===""){ $("mathFeedback").textContent="Type a number first!";return}
+ if(Number($("mathAnswer").value)===mathAnswer){stars+=4;$("mathFeedback").textContent="🌟 Correct! Great maths. +4 stars!"}
+ else{$("mathFeedback").textContent="Not quite! Try again. Think about multiplying the two numbers."}
+ render();
+}
+function crewCare(action){
+ let msg="";
+ if(action==="rest"){resources.Health=Math.min(100,resources.Health+12);msg="Your crew had a good rest. ❤️"}
+ if(action==="food"){
+  if(resources.Food<5){msg="There is not enough food. Visit the Supply Room!"}
+  else{resources.Food-=5;resources.Health=Math.min(100,resources.Health+8);msg="The crew enjoyed a meal. 🍎"}
+ }
+ if(action==="water"){
+  if(resources.Water<5){msg="There is not enough water. Check your supplies!"}
+  else{resources.Water-=5;resources.Health=Math.min(100,resources.Health+5);msg="The crew drank some water. 💧"}
+ }
+ if(action==="team"){resources.Health=Math.min(100,resources.Health+10);msg="The crew shared ideas and helped each other. 🤝"}
+ $("crewMessage").textContent=msg;
+ $("crewMood").textContent=resources.Health>65?"Your crew is feeling good!":resources.Health>30?"Your crew needs some care.":"Your crew needs help!";
+ stars++;render();say(msg);
+}
+function showAwards(){
+ let awards=[
+ ["🌕","Moon Explorer",visited.length>=3,"Explore 3 buildings"],
+ ["🔎","Hidden Object Hunter",found.length>=5,"Find 5 hidden objects"],
+ ["📚","Space Scholar",learned.length>=5,"Learn 5 space facts"],
+ ["🧠","Brain Power",quizDone.length>=4,"Answer 4 brain questions"],
+ ["⭐","Star Collector",stars>=20,"Collect 20 stars"],
+ ["🚀","Mission Hero",day>=9&&missionAnswered,"Reach the final mission"],
+ ["🏅","Super Explorer",visited.length===9&&found.length===9,"Explore every building and find every object"]
+ ];
+ $("awardList").innerHTML=awards.map(a=>`<div class="achievement">${a[2]?"🏆":"🔒"} ${a[0]} <b>${a[1]}</b><br><span class="small">${a[2]?"Unlocked!":a[3]}</span></div>`).join("");
+}
+function finish(success){
+ $("game").classList.add("hidden");$("ending").classList.remove("hidden");
+ let average=Math.round(Object.values(resources).reduce((a,b)=>a+b,0)/5);
+ $("endTitle").textContent=success?"🌕 MISSION COMPLETE!":"🚀 MISSION PAUSED";
+ $("endText").textContent=success?"Amazing work, "+player+"! Your crew completed all 10 mission days.":"Your crew needs more supplies. Learn from your choices and try again!";
+ $("endScore").textContent="⭐ "+stars+" stars | 🏅 "+badges+" badges";
+ $("endBadge").textContent=success?(stars>=35?"SUPER SPACE EXPLORER!": "MOON EXPLORER!"):"Keep learning, astronaut. Every attempt helps you improve!";
+}
+function saveGame(){
+ try{
+  let data={player,avatar,suit,stars,badges,day,resources,visited,found,learned};
+  localStorage.setItem("galacticMissionSave",JSON.stringify(data));
+  say("Your game progress has been saved on this device!");
+ }catch(e){say("Saving is not available in this browser. Keep this page open to continue playing.")}
+}
+function resetGame(){
+ if(confirm("Start a new game? Your saved progress will be replaced.")){
+  localStorage.removeItem("galacticMissionSave");location.reload();
+ }
+}
+render();
+</script>
+</body>
+</html>
