@@ -541,6 +541,508 @@ function resetGame(){
   localStorage.removeItem("galacticMissionSave");location.reload();
  }
 }
+
+/* ==========================================
+   GALACTIC MISSION - GAME EXPANSION
+   Add-on for the original game
+========================================== */
+
+(function addGameExpansion(){
+
+const extraStyle = document.createElement("style");
+extraStyle.textContent = `
+.game-panel{background:#101f3b;border:1px solid #45618d;border-radius:16px;padding:15px;margin:12px 0}
+.game-canvas-wrap{background:#101a30;border:3px solid #7196c8;border-radius:15px;overflow:hidden}
+#moonCanvas{display:block;width:100%;height:auto;touch-action:none;background:#182b45}
+.game-controls{display:grid;grid-template-columns:repeat(3,55px);justify-content:center;gap:6px;margin:12px}
+.game-controls button{height:48px;font-size:20px;margin:0}
+.shop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.shop-item{background:#1b3152;border:1px solid #526e99;border-radius:12px;padding:12px;text-align:center}
+.shop-item button{width:100%}
+.resource-detail{background:#10213c;border-radius:12px;padding:12px;margin:8px 0}
+.resource-detail strong{color:#83dcff}
+.level-tag{display:inline-block;background:#354d77;border-radius:20px;padding:7px 12px;margin:4px}
+.character-preview{background:#15294a;border-radius:15px;padding:12px;text-align:center}
+.character-preview svg{width:120px;height:145px;max-width:100%}
+.game-message{background:#253d61;padding:12px;border-radius:10px;margin:10px 0;line-height:1.5}
+@media(max-width:520px){.shop-grid{grid-template-columns:1fr 1fr}}
+`;
+document.head.appendChild(extraStyle);
+
+/* Add new navigation buttons */
+const nav=document.querySelector(".nav");
+const newTabs=[
+ ["moonGame","🎮 Moon Adventure"],
+ ["shop","⭐ Star Shop"],
+ ["custom","🧑‍🚀 Character Studio"]
+];
+
+newTabs.forEach(([id,label])=>{
+ if(!document.getElementById("tab-"+id)){
+  const b=document.createElement("button");
+  b.id="tab-"+id;
+  b.textContent=label;
+  b.onclick=()=>openExtraTab(id);
+  nav.appendChild(b);
+ }
+});
+
+/* Add new sections */
+const game=document.getElementById("game");
+
+function addSection(id,html){
+ if(document.getElementById(id))return;
+ const section=document.createElement("section");
+ section.id=id;
+ section.className="card hidden";
+ section.innerHTML=html;
+ game.insertBefore(section,game.querySelector("#log").parentElement);
+}
+
+addSection("moonGame",`
+ <h2>🌕 Moon Adventure</h2>
+ <p>Move your astronaut around the Moon, collect energy crystals and complete each level. Use the arrow keys or WASD on a computer, or the controls below on a tablet.</p>
+ <div class="level-tag" id="levelLabel">LEVEL 1</div>
+ <span class="tag" id="crystalLabel">💎 Crystals: 0 / 4</span>
+ <span class="tag" id="gameStarLabel">⭐ Game stars: 0</span>
+ <div class="game-canvas-wrap">
+  <canvas id="moonCanvas" width="760" height="420"></canvas>
+ </div>
+ <div class="game-controls">
+  <span></span><button onclick="moveHero(0,-1)">⬆️</button><span></span>
+  <button onclick="moveHero(-1,0)">⬅️</button>
+  <button onclick="moveHero(0,1)">⬇️</button>
+  <button onclick="moveHero(1,0)">➡️</button>
+ </div>
+ <div class="game-message" id="levelMessage">Mission: collect 4 energy crystals and reach the Moon Base.</div>
+ <button onclick="startMoonLevel()">🔄 Restart Level</button>
+ <button onclick="nextMoonLevel()">NEXT LEVEL ➜</button>
+ <p class="small">Learning tip: Energy crystals represent collected mission supplies. Real Moon missions require careful planning, safe equipment and teamwork.</p>
+`);
+
+addSection("shop",`
+ <h2>⭐ Astronaut Star Shop</h2>
+ <p>Earn stars by exploring, learning and completing missions. Spend them on new looks for your astronaut.</p>
+ <h3 id="shopBalance">⭐ Your stars: 0</h3>
+ <div class="character-preview">
+  <div id="shopCharacter"></div>
+  <p id="lookDescription">Your astronaut</p>
+ </div>
+ <div class="shop-grid" id="shopItems"></div>
+ <p class="small">Purchased items stay unlocked in this game on this device.</p>
+`);
+
+addSection("custom",`
+ <h2>🧑‍🚀 Character Studio</h2>
+ <p>Design your own astronaut and customise your crew.</p>
+ <div class="character-preview">
+  <div id="customCharacter"></div>
+  <p id="customDescription">Your astronaut</p>
+ </div>
+ <h3>Choose your suit colour</h3>
+ <div id="suitOptions"></div>
+ <h3>Choose your hair colour</h3>
+ <div id="hairOptions"></div>
+ <h3>Choose an accessory</h3>
+ <div id="accessoryOptions"></div>
+ <h3>Build your crew</h3>
+ <p>Give your crew members their own names and suit colours.</p>
+ <div id="crewBuilder"></div>
+`);
+
+function openExtraTab(id){
+ ["map","learn","mission","games","crew","awards","moonGame","shop","custom"].forEach(t=>{
+  const section=document.getElementById(t);
+  const button=document.getElementById("tab-"+t);
+  if(section)section.classList.toggle("hidden",t!==id);
+  if(button)button.classList.toggle("active",t===id);
+ });
+ if(id==="moonGame")drawMoon();
+ if(id==="shop")drawShop();
+ if(id==="custom")drawStudio();
+}
+
+/* Illustrated astronaut character */
+let look={
+ suit:"#50a9f0",
+ hair:"#49352c",
+ accessory:"None",
+ owned:["Basic Suit"],
+ crew:[
+  {name:"Nova",suit:"#50a9f0"},
+  {name:"Leo",suit:"#69c98b"},
+  {name:"Mira",suit:"#ed78ad"}
+ ]
+};
+
+function astronautDrawing(suitColor,hairColor,accessory){
+ const accessoryShape=accessory==="Star badge"
+ ?'<path d="M60 89 L65 98 L75 99 L67 106 L69 116 L60 111 L51 116 L53 106 L45 99 L55 98Z" fill="#ffd36a"/>'
+ :accessory==="Purple visor"
+ ?'<rect x="36" y="27" width="48" height="28" rx="13" fill="#a78bfa" opacity=".8"/>'
+ :accessory==="Golden antenna"
+ ?'<path d="M60 16 L60 4 M54 7 L66 7" stroke="#ffd36a" stroke-width="4" stroke-linecap="round"/>'
+ :"";
+ return `
+ <svg viewBox="0 0 120 150" role="img" aria-label="Illustrated astronaut">
+  <ellipse cx="60" cy="143" rx="30" ry="5" fill="#07152b"/>
+  <rect x="37" y="83" width="46" height="53" rx="15" fill="${suitColor}" stroke="#d9edff" stroke-width="3"/>
+  <rect x="27" y="91" width="13" height="35" rx="6" fill="${suitColor}" stroke="#d9edff" stroke-width="2"/>
+  <rect x="80" y="91" width="13" height="35" rx="6" fill="${suitColor}" stroke="#d9edff" stroke-width="2"/>
+  <rect x="43" y="126" width="14" height="17" rx="5" fill="#25344d"/>
+  <rect x="64" y="126" width="14" height="17" rx="5" fill="#25344d"/>
+  <circle cx="60" cy="48" r="31" fill="#d8eaff" stroke="#ffffff" stroke-width="4"/>
+  <path d="M32 43 Q31 13 60 14 Q88 14 88 43 Q78 29 60 31 Q43 29 32 43Z" fill="${hairColor}"/>
+  <ellipse cx="60" cy="49" rx="23" ry="19" fill="#315a7c"/>
+  <path d="M43 48 Q60 34 77 48" fill="none" stroke="#9bdfff" stroke-width="3"/>
+  <rect x="48" y="99" width="24" height="14" rx="4" fill="#eaf6ff"/>
+  ${accessoryShape}
+ </svg>`;
+}
+
+function refreshCharacters(){
+ const drawing=astronautDrawing(look.suit,look.hair,look.accessory);
+ ["shopCharacter","customCharacter"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.innerHTML=drawing;
+ });
+ const description="Suit: "+look.suit+" | Accessory: "+look.accessory;
+ ["customDescription","lookDescription"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.textContent=description;
+ });
+ const preview=document.getElementById("preview");
+ if(preview)preview.innerHTML=drawing;
+ const playerAvatar=document.getElementById("playerAvatar");
+ if(playerAvatar)playerAvatar.innerHTML=drawing;
+}
+
+const suitColours=[
+ ["Blue","#50a9f0"],["Purple","#9b83e8"],["Green","#69c98b"],
+ ["Pink","#ed78ad"],["Gold","#e9bd55"],["Red","#e87575"]
+];
+const hairColours=[
+ ["Brown","#49352c"],["Black","#171923"],["Blonde","#e6c36a"],
+ ["Red","#b94c3c"],["Purple","#9b83e8"]
+];
+
+function drawStudio(){
+ refreshCharacters();
+ document.getElementById("suitOptions").innerHTML=suitColours.map(([name,color])=>
+  `<button style="background:${color}" onclick="chooseLook('suit','${color}')">${name}</button>`
+ ).join("");
+ document.getElementById("hairOptions").innerHTML=hairColours.map(([name,color])=>
+  `<button onclick="chooseLook('hair','${color}')">${name}</button>`
+ ).join("");
+ const accessories=["None","Star badge","Purple visor","Golden antenna"];
+ document.getElementById("accessoryOptions").innerHTML=accessories.map(a=>
+  `<button onclick="chooseLook('accessory','${a}')">${a}</button>`
+ ).join("");
+ document.getElementById("crewBuilder").innerHTML=look.crew.map((member,i)=>`
+  <div class="resource-detail">
+   <b>Crew member ${i+1}</b>
+   <input value="${member.name}" maxlength="16" aria-label="Crew member name"
+    onchange="look.crew[${i}].name=this.value">
+   <p>Suit colour: ${member.suit}</p>
+   <button onclick="changeCrewSuit(${i})">Change suit colour</button>
+  </div>`).join("");
+}
+
+function chooseLook(type,value){
+ if(type==="suit"&&!look.owned.includes("Suit "+value)){
+  alert("Unlock this suit in the Star Shop first!");
+  return;
+ }
+ if(type==="hair"&&!look.owned.includes("Hair "+value)){
+  alert("Unlock this hair colour in the Star Shop first!");
+  return;
+ }
+ if(type==="accessory"&&value!=="None"&&!look.owned.includes(value)){
+  alert("Unlock this accessory in the Star Shop first!");
+  return;
+ }
+ look[type]=value;
+ refreshCharacters();
+}
+
+function changeCrewSuit(i){
+ const next=suitColours.findIndex(x=>x[1]===look.crew[i].suit);
+ look.crew[i].suit=suitColours[(next+1)%suitColours.length][1];
+ drawStudio();
+}
+
+/* Star shop */
+const shopCatalog=[
+ {name:"Purple Suit",type:"suit",value:"#9b83e8",cost:12},
+ {name:"Green Suit",type:"suit",value:"#69c98b",cost:12},
+ {name:"Pink Suit",type:"suit",value:"#ed78ad",cost:12},
+ {name:"Gold Suit",type:"suit",value:"#e9bd55",cost:18},
+ {name:"Blonde Hair",type:"hair",value:"#e6c36a",cost:8},
+ {name:"Purple Hair",type:"hair",value:"#9b83e8",cost:8},
+ {name:"Star Badge",type:"accessory",value:"Star badge",cost:10},
+ {name:"Purple Visor",type:"accessory",value:"Purple visor",cost:14},
+ {name:"Golden Antenna",type:"accessory",value:"Golden antenna",cost:16}
+];
+
+function drawShop(){
+ document.getElementById("shopBalance").textContent="⭐ Your stars: "+stars;
+ refreshCharacters();
+ document.getElementById("shopItems").innerHTML=shopCatalog.map((item,i)=>{
+  const key=item.type==="suit"?"Suit "+item.value:
+   item.type==="hair"?"Hair "+item.value:item.value;
+  const owned=look.owned.includes(key);
+  return `<div class="shop-item">
+   <h3>${item.name}</h3>
+   <p>⭐ ${item.cost} stars</p>
+   <button ${owned?"disabled":""} onclick="buyShopItem(${i})">${owned?"OWNED":"BUY"}</button>
+  </div>`;
+ }).join("");
+}
+
+function buyShopItem(i){
+ const item=shopCatalog[i];
+ const key=item.type==="suit"?"Suit "+item.value:
+  item.type==="hair"?"Hair "+item.value:item.value;
+ if(look.owned.includes(key))return;
+ if(stars<item.cost){
+  alert("You need "+(item.cost-stars)+" more stars!");
+  return;
+ }
+ stars-=item.cost;
+ look.owned.push(key);
+ look[item.type]=item.value;
+ render();
+ drawShop();
+ refreshCharacters();
+ say("You bought "+item.name+" from the Star Shop!");
+}
+
+/* Playable Moon adventure */
+const canvas=document.getElementById("moonCanvas");
+const ctx=canvas.getContext("2d");
+let hero={x:55,y:345};
+let crystals=[];
+let crystalCount=0;
+let moonLevel=1;
+let levelComplete=false;
+let gameStars=0;
+
+function startMoonLevel(){
+ hero={x:55,y:345};
+ crystalCount=0;
+ levelComplete=false;
+ crystals=[
+  {x:170,y:100,taken:false},
+  {x:320,y:300,taken:false},
+  {x:510,y:105,taken:false},
+  {x:650,y:300,taken:false}
+ ];
+ document.getElementById("levelLabel").textContent="LEVEL "+moonLevel;
+ document.getElementById("crystalLabel").textContent="💎 Crystals: 0 / 4";
+ document.getElementById("levelMessage").textContent=
+  "Mission: collect all 4 energy crystals and reach the Moon Base.";
+ document.getElementById("gameStarLabel").textContent="⭐ Game stars: "+gameStars;
+ drawMoon();
+}
+
+function drawMoon(){
+ if(!ctx)return;
+ ctx.clearRect(0,0,760,420);
+ ctx.fillStyle="#253955";
+ ctx.fillRect(0,0,760,420);
+
+ /* Moon ground */
+ ctx.fillStyle="#8293a9";
+ ctx.fillRect(0,370,760,50);
+ for(let i=0;i<28;i++){
+  ctx.fillStyle=i%2?"#9eacbd":"#657992";
+  ctx.beginPath();
+  ctx.arc((i*83)%760, (i*47)%350, 3+(i%5)*2, 0,Math.PI*2);
+  ctx.fill();
+ }
+
+ /* Craters */
+ for(let i=0;i<7;i++){
+  ctx.strokeStyle="#61748c";
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.ellipse(70+i*105,210+(i%2)*60,25,9,0,0,Math.PI*2);
+  ctx.stroke();
+ }
+
+ /* Moon base */
+ ctx.fillStyle="#d9e8f6";
+ ctx.fillRect(665,285,75,85);
+ ctx.fillStyle="#70d3f2";
+ ctx.fillRect(683,302,38,35);
+ ctx.fillStyle="#ffffff";
+ ctx.font="15px Arial";
+ ctx.fillText("BASE",680,277);
+
+ /* Solar panels */
+ ctx.fillStyle="#4b7da8";
+ ctx.fillRect(580,335,50,20);
+ ctx.strokeStyle="#a9d9ff";
+ ctx.strokeRect(580,335,50,20);
+
+ /* Collectibles */
+ crystals.forEach(c=>{
+  if(c.taken)return;
+  ctx.fillStyle="#65e6ff";
+  ctx.beginPath();
+  ctx.moveTo(c.x,c.y-13);
+  ctx.lineTo(c.x+11,c.y);
+  ctx.lineTo(c.x,c.y+13);
+  ctx.lineTo(c.x-11,c.y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle="#e2fbff";
+  ctx.stroke();
+ });
+
+ /* Illustrated player astronaut */
+ ctx.fillStyle=look.suit;
+ ctx.fillRect(hero.x-11,hero.y-7,22,25);
+ ctx.fillStyle="#dceeff";
+ ctx.beginPath();
+ ctx.arc(hero.x,hero.y-17,14,0,Math.PI*2);
+ ctx.fill();
+ ctx.strokeStyle="#ffffff";
+ ctx.lineWidth=3;
+ ctx.stroke();
+ ctx.fillStyle="#315a7c";
+ ctx.beginPath();
+ ctx.ellipse(hero.x,hero.y-17,10,7,0,0,Math.PI*2);
+ ctx.fill();
+ ctx.fillStyle="#ffffff";
+ ctx.fillRect(hero.x-8,hero.y+16,6,7);
+ ctx.fillRect(hero.x+3,hero.y+16,6,7);
+}
+
+function moveHero(dx,dy){
+ if(levelComplete)return;
+ hero.x=Math.max(18,Math.min(650,hero.x+dx*17));
+ hero.y=Math.max(30,Math.min(365,hero.y+dy*17));
+ checkMoonCollisions();
+ drawMoon();
+}
+
+function checkMoonCollisions(){
+ crystals.forEach(c=>{
+  if(!c.taken&&Math.hypot(hero.x-c.x,hero.y-c.y)<25){
+   c.taken=true;
+   crystalCount++;
+   gameStars+=2;
+   stars+=2;
+   document.getElementById("crystalLabel").textContent=
+    "💎 Crystals: "+crystalCount+" / 4";
+   document.getElementById("gameStarLabel").textContent=
+    "⭐ Game stars: "+gameStars;
+   document.getElementById("levelMessage").textContent=
+    "You collected an energy crystal! +2 stars. Keep exploring!";
+   render();
+  }
+ });
+ if(crystalCount===4&&hero.x>650&&hero.y>270){
+  levelComplete=true;
+  gameStars+=5;
+  stars+=5;
+  document.getElementById("levelMessage").textContent=
+   "🎉 Level complete! You collected all 4 crystals and reached the Moon Base. +5 bonus stars!";
+  render();
+  say("Moon Adventure level "+moonLevel+" completed!");
+ }
+}
+
+function nextMoonLevel(){
+ if(!levelComplete){
+  alert("Collect all 4 crystals and reach the Moon Base first!");
+  return;
+ }
+ if(moonLevel>=5){
+  document.getElementById("levelMessage").textContent=
+   "🏆 Amazing! You completed all 5 Moon Adventure levels!";
+  return;
+ }
+ moonLevel++;
+ startMoonLevel();
+ document.getElementById("levelMessage").textContent=
+  "Level "+moonLevel+" unlocked! Collect the crystals and reach the base.";
+}
+
+document.addEventListener("keydown",e=>{
+ if(document.getElementById("moonGame").classList.contains("hidden"))return;
+ const key=e.key.toLowerCase();
+ const directions={
+  arrowup:[0,-1],w:[0,-1],
+  arrowdown:[0,1],s:[0,1],
+  arrowleft:[-1,0],a:[-1,0],
+  arrowright:[1,0],d:[1,0]
+ };
+ if(directions[key]){
+  e.preventDefault();
+  moveHero(...directions[key]);
+ }
+});
+
+/* Detailed resource dashboard */
+const originalRender=render;
+render=function(){
+ originalRender();
+ const stats=document.getElementById("stats");
+ if(!stats)return;
+ const details={
+  Water:"Drinkable water: "+Math.round(resources.Water*.65)+" units. Recycled/non-drinkable water: "+Math.round(resources.Water*.35)+" units. Only treated, tested water should be used for drinking.",
+  Oxygen:"Oxygen supply: "+resources.Oxygen+"%. The habitat needs a working life-support system and regular checks.",
+  Power:"Battery reserve: "+resources.Power+"%. Solar panels can help recharge the base when sunlight is available.",
+  Food:"Food supply: "+resources.Food+"%. Plan meals carefully and grow suitable plants in the greenhouse.",
+  Health:"Crew health: "+resources.Health+"%. Simulated heart-rate and temperature indicators are shown below. These are game values, not real medical measurements."
+ };
+ const extra=document.createElement("div");
+ extra.className="resource-detail";
+ extra.innerHTML=Object.keys(details).map(k=>{
+  let value=resources[k];
+  let status=value<30?"LOW - action needed":value<60?"Keep an eye on it":"Stable";
+  return `<p><strong>${k} details:</strong> ${details[k]}<br><b>Status: ${status}</b></p>`;
+ }).join("")+
+ `<p><strong>Simulated crew readings:</strong> Heart rate: ${resources.Health<30?105:resources.Health<60?90:75} bpm | Body temperature: ${resources.Health<30?"37.8":"37.0"} °C</p>
+ <p class="small">These are fictional game indicators. They are not medical advice or real astronaut monitoring readings.</p>
+ <button onclick="showResourceHelp()">🧰 SHOW RESOURCE SOLUTIONS</button>
+ <div id="resourceHelp"></div>`;
+ stats.parentElement.appendChild(extra);
+};
+
+/* Solutions for low resources */
+window.showResourceHelp=function(){
+ const help=[];
+ if(resources.Water<60)help.push("💧 WATER: Check for leaks, track the remaining supply and recycle suitable wastewater using a treatment system. Recycled water must be properly treated before drinking.");
+ if(resources.Oxygen<60)help.push("🫧 OXYGEN: Follow the habitat safety checklist, check the life-support equipment and contact mission control. Never ignore an oxygen warning.");
+ if(resources.Power<60)help.push("⚡ POWER: Switch off non-essential equipment, check the solar panels and use backup power carefully.");
+ if(resources.Food<60)help.push("🍎 FOOD: Count the remaining meals, plan portions and check greenhouse growing conditions.");
+ if(resources.Health<60)help.push("❤️ HEALTH: Stop unnecessary work, rest in the safe habitat and contact the medical team if someone feels unwell.");
+ if(help.length===0)help.push("🌟 All your main resources are looking stable! Keep checking them and plan ahead.");
+ document.getElementById("resourceHelp").innerHTML=
+  help.map(x=>`<div class="game-message">${x}</div>`).join("");
+};
+
+/* Crew colour customisation */
+window.drawStudio=drawStudio;
+window.chooseLook=chooseLook;
+window.changeCrewSuit=changeCrewSuit;
+window.buyShopItem=buyShopItem;
+window.startMoonLevel=startMoonLevel;
+window.moveHero=moveHero;
+window.nextMoonLevel=nextMoonLevel;
+window.openExtraTab=openExtraTab;
+
+/* Start the new game area */
+startMoonLevel();
+drawStudio();
+drawShop();
+
+})();
+render();
+
 render();
 </script>
  <footer style="text-align:center; padding:30px 15px; margin-top:40px; color:white;">
