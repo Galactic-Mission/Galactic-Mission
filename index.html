@@ -1009,6 +1009,8 @@ render=function(){
  <p class="small">These are fictional game indicators. They are not medical advice or real astronaut monitoring readings.</p>
  <button onclick="showResourceHelp()">🧰 SHOW RESOURCE SOLUTIONS</button>
  <div id="resourceHelp"></div>`;
+const oldExtra = stats.parentElement.querySelector(".resource-detail");
+if (oldExtra) oldExtra.remove();
  stats.parentElement.appendChild(extra);
 };
 
